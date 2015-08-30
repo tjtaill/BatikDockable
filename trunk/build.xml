@@ -1,0 +1,55 @@
+<?xml version="1.0" ?>
+<!-- fill project name in -->
+<project name="BatikDockablePlugin" default="build" basedir=".">
+    <!-- mark:build.properties -->
+    <!-- /mark:build.properties -->
+    <!-- <property file="build.properties" /> -->
+    <!-- <property file="../build.properties" /> -->
+    <property name="compiler.source" value="1.7"/>
+    <property name="compiler.target" value="1.7"/>
+    <property name="compiler.debug" value="true"/>
+    <property name="src.dir" value="src"/>
+    <property name="lib.dir" value="./lib"/>
+
+
+    <!-- Documentation process
+    none: if you supply your own html file as this template does.
+    xsltproc: if you plan on using docbook
+    -->
+    <property name="docs-proc.target" value="none"/>
+
+    <!-- jEdit installation properties. -->
+    <!-- mark:properties -->
+    <property name="build.support" value=".."/>
+    <property name="install.dir" value="C:\Users\troy\AppData\Roaming\jEdit\jars"/>
+    <property name="jedit.install.dir" value="C:\Program Files\jEdit"/>
+    <property name="jedit.plugins.dir" value="${install.dir}"/>
+    <!-- /mark:properties -->
+    <import file="${build.support}/plugin-build.xml"/>
+
+    <!-- If you want any extra files to be included with your plugin's jar,
+    such as custom images, you need to specify them here. -->
+    <selector id="packageFiles">
+        <and>
+            <or>
+                <!-- file in html help file name vand create the file in docs dir -->
+
+                <filename name="**/JeditPlugin.html"/>
+            </or>
+        </and>
+    </selector>
+
+    <!-- Add your plugin's specific dependencies here -->
+    <path id="project.class.path">
+        <pathelement location="${build.support}/jedit.jar"/>
+
+        <pathelement location="${lib.dir}/batik-anim-1.8.jar"/>
+        <pathelement location="${lib.dir}/batik-dom-1.8.jar"/>
+        <pathelement location="${lib.dir}/batik-svg-dom-1.8.jar"/>
+        <pathelement location="${lib.dir}/batik-swing-1.8.jar"/>
+        <pathelement location="${lib.dir}/batik-bridge-1.8.jar"/>
+        <pathelement location="${lib.dir}/batik-util-1.8.jar"/>
+        <pathelement location="${lib.dir}/xml-apis-ext-1.3.04.jar"/>
+        <pathelement location="${lib.dir}/batik-gvt-1.8.jar"/>
+    </path>
+</project>

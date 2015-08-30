@@ -1,0 +1,47 @@
+plugin.batikdockable.BatikDockablePlugin.activate=defer
+plugin.batikdockable.BatikDockablePlugin.author=troy
+plugin.batikdockable.BatikDockablePlugin.description=Jedit Dockable Batik Svg viewer
+plugin.batikdockable.BatikDockablePlugin.docs=docs/BatikDockablePlugin.html
+plugin.batikdockable.BatikDockablePlugin.longdescription=description.html
+plugin.batikdockable.BatikDockablePlugin.name=BatikDockablePlugin
+plugin.batikdockable.BatikDockablePlugin.usePluginHome=true
+
+plugin.batikdockable.BatikDockablePlugin.version=0.1
+
+plugin.batikdockable.BatikDockablePlugin.depend.0=jdk 1.7.0
+plugin.batikdockable.BatikDockablePlugin.depend.1=jedit 05.00.99.00
+
+# list addition jedit plugin deps
+#plugin.batikdockable.BatikDockablePlugin.depend.2=plugin errorlist.ErrorListPlugin 2.1
+#plugin.batikdockable.BatikDockablePlugin.depend.3=plugin sidekick.SideKickPlugin 1.7
+
+# list needed jar dependencies
+plugin.batikdockable.BatikDockablePlugin.jars=\
+    batik-anim-1.8.jar \
+    batik-awt-util-1.8.jar \
+    batik-bridge-1.8.jar \
+    batik-css-1.8.jar \
+    batik-dom-1.8.jar \
+    batik-gui-util-1.8.jar \
+    batik-gvt-1.8.jar \
+    batik-parser-1.8.jar \
+    batik-script-1.8.jar \
+    batik-svg-dom-1.8.jar \
+    batik-swing-1.8.jar \
+    batik-util-1.8.jar \
+    batik-xml-1.8.jar \
+    xml-apis-1.4.01.jar \
+    xml-apis-ext-1.3.04.jar \
+    xmlgraphics-commons-2.0.jar
+
+# Menu
+plugin.batikdockable.BatikDockablePlugin.menu=\
+  batik-svg-viewer-show \
+  batik-open-svg
+
+
+batik-svg-viewer-show.label=Show Batik Svg Viewer
+batik-open-svg.label=Open Associated Svg
+
+# Dockable
+batik-svg-viewer.title=Batik Svg Viewer

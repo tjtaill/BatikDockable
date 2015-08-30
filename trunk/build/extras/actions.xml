@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE ACTIONS SYSTEM "actions.dtd">
+<ACTIONS>
+    <ACTION NAME="batik-svg-viewer-show">
+        <CODE>
+            wm.addDockableWindow("batik-svg-viewer");
+            wm.getDockableWindow("batik-svg-viewer").focus();
+        </CODE>
+    </ACTION>
+    <ACTION NAME="batik-open-svg">
+        <CODE>
+            wm.showDockableWindow("batik-svg-viewer");
+            batikSvgViewer = wm.getDockableWindow("batik-svg-viewer");
+            batikSvgViewer.openSvg(editPane);
+        </CODE>
+    </ACTION>
+</ACTIONS>

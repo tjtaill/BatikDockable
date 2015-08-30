@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<!DOCTYPE DOCKABLES SYSTEM "dockables.dtd">
+<DOCKABLES>
+    <DOCKABLE NAME="batik-svg-viewer">
+        new batikdockable.BatikDockable();
+    </DOCKABLE>
+</DOCKABLES>
