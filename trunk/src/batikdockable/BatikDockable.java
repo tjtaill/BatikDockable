@@ -45,6 +45,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
 
 
 
+
     private class LinkLineJumpListener implements LinkActivationListener {
 
         @Override
@@ -95,16 +96,38 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     @Override
                     public void run() {
                         textToColor.setAttributeNS(null, "fill", "orange");
-                        /*
-                        TODO : figure out out how to pan to element
-                        need viewbox transform scale the transaltion then apply delta
 
-                        double x = Double.valueOf( textToColor.getAttributeNS(null, "x") );
-                        double y = Double.valueOf(textToColor.getAttributeNS(null, "y"));
-                        AffineTransform renderingTransform = customSvgCanvas.getRenderingTransform();
-                        renderingTransform.setToTranslation(x, y);
-                        customSvgCanvas.setRenderingTransform( renderingTransform, true );
+                        int w  = customSvgCanvas.getWidth();
+                        System.out.println("Canvas Width: " + w);
+
+                        int h  = customSvgCanvas.getHeight();
+                        System.out.println("Canvas Height: " + h);
+
+                        // might have to scale these
+                        int cx = Float.valueOf( textToColor.getAttributeNS(null, "x") ).intValue();
+                        System.out.println("Element X Position: " + cx);
+
+                        int cy = Float.valueOf(textToColor.getAttributeNS(null, "y")).intValue();
+                        System.out.println("Element Y Position: " + cy);
+
+                        AffineTransform rt = (AffineTransform) customSvgCanvas.getRenderingTransform().clone();
+
+                        double tx = rt.getTranslateX();
+                        double ty = rt.getTranslateY();
+
+                        System.out.println("Canvas tx: " + tx);
+                        System.out.println("Canvas ty: " + ty);
+
+
+                        /*
+                        AffineTransform at = AffineTransform.getTranslateInstance(cx - x, cy - y);
+
+
+                        rt.preConcatenate( at );
+
+                        customSvgCanvas.setRenderingTransform( rt );
                         */
+
                     }
                 };
                 invokeLater(r);
@@ -131,6 +154,9 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
+
+
+
 
         NodeList anchors = svgDocument.getElementsByTagName("a");
         textElements.clear();
