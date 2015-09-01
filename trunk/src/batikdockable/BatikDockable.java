@@ -3,6 +3,7 @@ package batikdockable;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.bridge.ViewBox;
+import org.apache.batik.dom.svg.SVGOMPoint;
 import org.apache.batik.gvt.GraphicsNode;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.JSVGScrollPane;
@@ -124,42 +125,40 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     @Override
                     public void run() {
                         textToColor.setAttributeNS(null, "fill", "orange");
-                        /*
-                        float screenX = getScreenX(textToColor);
-                        float screenY = getScreenY(textToColor);
+                        SVGLocatable textLocatable = (SVGLocatable) textToColor;
+                        SVGLocatable parentLocatable = (SVGLocatable) textToColor.getParentNode();
+                        SVGRect bBox = textLocatable.getBBox();
 
-                        AffineTransform tx = AffineTransform.getTranslateInstance(-screenX, -screenY);
-                        AffineTransform rt = (AffineTransform) customSvgCanvas.getRenderingTransform().clone();
+                        // get center of text bbox
+                        float domX = bBox.getX() + bBox.getWidth() / 2;
+                        float domY = bBox.getY() + bBox.getHeight() / 2;
+
+                        // This close to works it is off center a bit low on the screen
+                        // it is either due to not taking into accunt the local matrix
+                        // as well as the parent matrix or a miss calculation of the
+                        // canvas center
+                        SVGPoint svgPoint = rootElement.createSVGPoint();
+                        svgPoint.setX(domX);
+                        svgPoint.setY( domY );
+                        SVGMatrix parentMatrix = parentLocatable.getCTM();
+                        SVGMatrix localMatrix = textLocatable.getCTM();
+
+                        SVGPoint screenPoint = svgPoint.matrixTransform(parentMatrix);
+
+                        AffineTransform tx = AffineTransform.getTranslateInstance
+                                (-screenPoint.getX(),
+                                        -screenPoint.getY());
 
                         Dimension canvasSize = customSvgCanvas.getSize();
 
                         tx.preConcatenate(AffineTransform.getTranslateInstance
                                 (canvasSize.width/2, canvasSize.height/2));
+
+                        AffineTransform rt = (AffineTransform) customSvgCanvas.getInitialTransform().clone();
 
                         rt.preConcatenate(tx);
 
                         customSvgCanvas.setRenderingTransform(rt);
-
-                        */
-
-                        /*
-                        GraphicsNode gn = customSvgCanvas.getBridgeContxt().getGraphicsNode(textToColor);
-                        AffineTransform rt = customSvgCanvas.getRenderingTransform();
-                        Rectangle gnb = rt.createTransformedShape(gn.getBounds()).getBounds();
-
-
-                        Dimension canvasSize = customSvgCanvas.getSize();
-
-                        AffineTransform tx = AffineTransform.getTranslateInstance
-                                (-gnb.getX() - gnb.getWidth() / 2,
-                                        -gnb.getY() - gnb.getHeight() / 2);
-                        tx.preConcatenate(AffineTransform.getTranslateInstance
-                                (canvasSize.width/2, canvasSize.height/2));
-
-                        AffineTransform newRT = new AffineTransform(rt);
-                        newRT.preConcatenate(tx);
-                        customSvgCanvas.setRenderingTransform(newRT);
-                        */
                     }
                 };
                 invokeLater(r);
