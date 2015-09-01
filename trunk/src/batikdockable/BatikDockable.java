@@ -2,6 +2,8 @@ package batikdockable;
 
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
+import org.apache.batik.bridge.ViewBox;
+import org.apache.batik.gvt.GraphicsNode;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.JSVGScrollPane;
 import org.apache.batik.swing.svg.LinkActivationEvent;
@@ -13,13 +15,14 @@ import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.svg.SVGDocument;
+import org.w3c.dom.svg.*;
 
 import javax.swing.*;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import java.awt.*;
 import java.awt.geom.AffineTransform;
+import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -41,9 +44,9 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
     private int lastLineNumber = 0;
     private SVGDocument svgDocument;
     private SyncCaretListener syncCaretListener;
-
-
-
+    private SVGSVGElement rootElement;
+    private float[] viewBox;
+    private SVGRect viewport;
 
 
     private class LinkLineJumpListener implements LinkActivationListener {
@@ -68,6 +71,31 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         private void invokeLater(Runnable runnable) {
             customSvgCanvas.getUpdateManager().getUpdateRunnableQueue().invokeLater(runnable);
         }
+
+
+        private float getScreenX(Element element) {
+            SVGLocatable svgLocatable = (SVGLocatable) element;
+            SVGRect bBox = svgLocatable.getBBox();
+
+            float x = bBox.getX() + bBox.getWidth()/2;
+            float y = bBox.getY() +  bBox.getHeight()/2;
+            SVGMatrix ctm = svgLocatable.getCTM();
+
+            return (ctm.getA() * x) + (ctm.getC() * y)  + ctm.getE();
+        }
+
+        private float getScreenY(Element element) {
+            SVGLocatable svgLocatable = (SVGLocatable) element;
+            SVGRect bBox = svgLocatable.getBBox();
+
+            float x = bBox.getX() + bBox.getWidth()/2;
+            float y = bBox.getY() +  bBox.getHeight()/2;
+            SVGMatrix ctm = svgLocatable.getCTM();
+
+            return (ctm.getB() * x) + (ctm.getD() * y)  + ctm.getF();
+        }
+
+
 
         @Override
         public void caretUpdate(CaretEvent e) {
@@ -96,38 +124,42 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     @Override
                     public void run() {
                         textToColor.setAttributeNS(null, "fill", "orange");
+                        /*
+                        float screenX = getScreenX(textToColor);
+                        float screenY = getScreenY(textToColor);
 
-                        int w  = customSvgCanvas.getWidth();
-                        System.out.println("Canvas Width: " + w);
-
-                        int h  = customSvgCanvas.getHeight();
-                        System.out.println("Canvas Height: " + h);
-
-                        // might have to scale these
-                        int cx = Float.valueOf( textToColor.getAttributeNS(null, "x") ).intValue();
-                        System.out.println("Element X Position: " + cx);
-
-                        int cy = Float.valueOf(textToColor.getAttributeNS(null, "y")).intValue();
-                        System.out.println("Element Y Position: " + cy);
-
+                        AffineTransform tx = AffineTransform.getTranslateInstance(-screenX, -screenY);
                         AffineTransform rt = (AffineTransform) customSvgCanvas.getRenderingTransform().clone();
 
-                        double tx = rt.getTranslateX();
-                        double ty = rt.getTranslateY();
+                        Dimension canvasSize = customSvgCanvas.getSize();
 
-                        System.out.println("Canvas tx: " + tx);
-                        System.out.println("Canvas ty: " + ty);
+                        tx.preConcatenate(AffineTransform.getTranslateInstance
+                                (canvasSize.width/2, canvasSize.height/2));
 
+                        rt.preConcatenate(tx);
 
-                        /*
-                        AffineTransform at = AffineTransform.getTranslateInstance(cx - x, cy - y);
+                        customSvgCanvas.setRenderingTransform(rt);
 
-
-                        rt.preConcatenate( at );
-
-                        customSvgCanvas.setRenderingTransform( rt );
                         */
 
+                        /*
+                        GraphicsNode gn = customSvgCanvas.getBridgeContxt().getGraphicsNode(textToColor);
+                        AffineTransform rt = customSvgCanvas.getRenderingTransform();
+                        Rectangle gnb = rt.createTransformedShape(gn.getBounds()).getBounds();
+
+
+                        Dimension canvasSize = customSvgCanvas.getSize();
+
+                        AffineTransform tx = AffineTransform.getTranslateInstance
+                                (-gnb.getX() - gnb.getWidth() / 2,
+                                        -gnb.getY() - gnb.getHeight() / 2);
+                        tx.preConcatenate(AffineTransform.getTranslateInstance
+                                (canvasSize.width/2, canvasSize.height/2));
+
+                        AffineTransform newRT = new AffineTransform(rt);
+                        newRT.preConcatenate(tx);
+                        customSvgCanvas.setRenderingTransform(newRT);
+                        */
                     }
                 };
                 invokeLater(r);
@@ -155,7 +187,12 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
             throw new RuntimeException(e);
         }
 
+        rootElement = svgDocument.getRootElement();
 
+
+        viewBox = ViewBox.parseViewBoxAttribute(rootElement,
+                rootElement.getAttributeNS(null, "viewBox"),
+                customSvgCanvas.getBridgeContxt());
 
 
         NodeList anchors = svgDocument.getElementsByTagName("a");

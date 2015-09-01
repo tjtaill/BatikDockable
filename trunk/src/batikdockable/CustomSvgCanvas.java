@@ -1,6 +1,7 @@
 package batikdockable;
 
 
+import org.apache.batik.bridge.BridgeContext;
 import org.apache.batik.bridge.UserAgent;
 import org.apache.batik.swing.JSVGCanvas;
 import org.w3c.dom.svg.SVGAElement;
@@ -23,6 +24,10 @@ class CustomSvgCanvas extends JSVGCanvas {
     @Override
     protected UserAgent createUserAgent() {
         return new CustomCanvasUserAgent();
+    }
+
+    public BridgeContext getBridgeContxt() {
+        return bridgeContext;
     }
 
 
