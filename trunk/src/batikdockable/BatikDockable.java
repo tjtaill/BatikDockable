@@ -7,6 +7,8 @@ import org.apache.batik.dom.svg.SVGOMPoint;
 import org.apache.batik.gvt.GraphicsNode;
 import org.apache.batik.swing.JSVGCanvas;
 import org.apache.batik.swing.JSVGScrollPane;
+import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
+import org.apache.batik.swing.gvt.GVTTreeRendererListener;
 import org.apache.batik.swing.svg.LinkActivationEvent;
 import org.apache.batik.swing.svg.LinkActivationListener;
 import org.apache.batik.util.XMLResourceDescriptor;
@@ -48,6 +50,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
     private SVGSVGElement rootElement;
     private float[] viewBox;
     private SVGRect viewport;
+    private RefreshSizeRenderListener refreshSizeRenderListener;
 
 
     private class LinkLineJumpListener implements LinkActivationListener {
@@ -113,7 +116,9 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     public void run() {
                         for(Element value : textElements.values() ) {
                             value.setAttributeNS(null, "fill", FILL_NONE);
+
                         }
+                        rootElement.removeAttributeNS(null, "transform");
                     }
                 };
                 invokeLater(r);
@@ -125,7 +130,10 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     @Override
                     public void run() {
                         textToColor.setAttributeNS(null, "fill", "orange");
+
+                        /*
                         SVGLocatable textLocatable = (SVGLocatable) textToColor;
+
                         SVGLocatable parentLocatable = (SVGLocatable) textToColor.getParentNode();
                         SVGRect bBox = textLocatable.getBBox();
 
@@ -133,10 +141,6 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                         float domX = bBox.getX() + bBox.getWidth() / 2;
                         float domY = bBox.getY() + bBox.getHeight() / 2;
 
-                        // This close to works it is off center a bit low on the screen
-                        // it is either due to not taking into accunt the local matrix
-                        // as well as the parent matrix or a miss calculation of the
-                        // canvas center
                         SVGPoint svgPoint = rootElement.createSVGPoint();
                         svgPoint.setX(domX);
                         svgPoint.setY( domY );
@@ -159,10 +163,40 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                         rt.preConcatenate(tx);
 
                         customSvgCanvas.setRenderingTransform(rt);
+                        */
                     }
                 };
                 invokeLater(r);
             }
+        }
+    }
+
+    private class RefreshSizeRenderListener implements GVTTreeRendererListener {
+
+        @Override
+        public void gvtRenderingPrepare(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+        }
+
+        @Override
+        public void gvtRenderingStarted(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+        }
+
+        @Override
+        public void gvtRenderingCompleted(GVTTreeRendererEvent gvtTreeRendererEvent) {
+            invalidate();
+            validate();
+        }
+
+        @Override
+        public void gvtRenderingCancelled(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+        }
+
+        @Override
+        public void gvtRenderingFailed(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
         }
     }
 
@@ -205,12 +239,41 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
             Element text = (Element) textNodes.item(0);
             textElements.put(lineNumber, text);
         }
+        customSvgCanvas.addGVTTreeRendererListener(new GVTTreeRendererListener() {
+            @Override
+            public void gvtRenderingPrepare(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+            }
+
+            @Override
+            public void gvtRenderingStarted(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+            }
+
+            @Override
+            public void gvtRenderingCompleted(GVTTreeRendererEvent gvtTreeRendererEvent) {
+                invalidate();
+                validate();
+            }
+
+            @Override
+            public void gvtRenderingCancelled(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+            }
+
+            @Override
+            public void gvtRenderingFailed(GVTTreeRendererEvent gvtTreeRendererEvent) {
+
+            }
+        });
+        refreshSizeRenderListener = new RefreshSizeRenderListener();
+        customSvgCanvas.addGVTTreeRendererListener( refreshSizeRenderListener );
         customSvgCanvas.setSVGDocument( svgDocument );
         customSvgCanvas.addLinkActivationListener(new LinkLineJumpListener());
         syncCaretListener = new SyncCaretListener();
-        textArea.addCaretListener( syncCaretListener );
+        textArea.addCaretListener( syncCaretListener);
         EditBus.addToBus(this);
-        invalidate();
+
     }
 
     @Override
@@ -225,6 +288,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         if( ebMessage instanceof BufferUpdate && ebMessage.getSource() == buffer ) {
             BufferUpdate bufferUpdate = (BufferUpdate) ebMessage;
             if ( bufferUpdate.getWhat() == BufferUpdate.CLOSING ) {
+                customSvgCanvas.removeGVTTreeRendererListener( refreshSizeRenderListener );
                 textArea.removeCaretListener( syncCaretListener );
                 EditBus.removeFromBus(this);
                 customSvgCanvas.removeLinkActivationListener(linkLineJumpListener);
