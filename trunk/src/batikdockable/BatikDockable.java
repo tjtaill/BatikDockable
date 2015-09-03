@@ -3,10 +3,7 @@ package batikdockable;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.bridge.ViewBox;
-import org.apache.batik.dom.svg.SVGOMPoint;
-import org.apache.batik.gvt.GraphicsNode;
 import org.apache.batik.swing.JSVGCanvas;
-import org.apache.batik.swing.JSVGScrollPane;
 import org.apache.batik.swing.gvt.GVTTreeRendererEvent;
 import org.apache.batik.swing.gvt.GVTTreeRendererListener;
 import org.apache.batik.swing.svg.LinkActivationEvent;
@@ -18,14 +15,15 @@ import org.gjt.sp.jedit.msg.BufferUpdate;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.w3c.dom.svg.*;
+import org.w3c.dom.svg.SVGDocument;
+import org.w3c.dom.svg.SVGLocatable;
+import org.w3c.dom.svg.SVGRect;
+import org.w3c.dom.svg.SVGSVGElement;
 
 import javax.swing.*;
 import javax.swing.event.CaretEvent;
 import javax.swing.event.CaretListener;
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Rectangle2D;
 import java.io.File;
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -36,21 +34,20 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
     private final static String XLINK_NS = "http://www.w3.org/1999/xlink";
 
     private CustomSvgCanvas customSvgCanvas;
-    private JSVGScrollPane scrollPane;
     private org.gjt.sp.jedit.textarea.TextArea textArea;
     private Buffer buffer;
     private LinkLineJumpListener linkLineJumpListener;
     private NavigableMap<Integer, Element> textElements = new TreeMap<>();
-    private Element lastColoredText;
     private SAXSVGDocumentFactory svgDocumentFactory =
             new SAXSVGDocumentFactory( XMLResourceDescriptor.getXMLParserClassName() );
-    private int lastLineNumber = 0;
     private SVGDocument svgDocument;
     private SyncCaretListener syncCaretListener;
     private SVGSVGElement rootElement;
-    private float[] viewBox;
-    private SVGRect viewport;
     private RefreshSizeRenderListener refreshSizeRenderListener;
+    private float viewBoxCenterX;
+    private float viewBoxCenterY;
+    private float viewBoxWidth;
+    private float viewBoxHeight;
 
 
     private class LinkLineJumpListener implements LinkActivationListener {
@@ -75,31 +72,6 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         private void invokeLater(Runnable runnable) {
             customSvgCanvas.getUpdateManager().getUpdateRunnableQueue().invokeLater(runnable);
         }
-
-
-        private float getScreenX(Element element) {
-            SVGLocatable svgLocatable = (SVGLocatable) element;
-            SVGRect bBox = svgLocatable.getBBox();
-
-            float x = bBox.getX() + bBox.getWidth()/2;
-            float y = bBox.getY() +  bBox.getHeight()/2;
-            SVGMatrix ctm = svgLocatable.getCTM();
-
-            return (ctm.getA() * x) + (ctm.getC() * y)  + ctm.getE();
-        }
-
-        private float getScreenY(Element element) {
-            SVGLocatable svgLocatable = (SVGLocatable) element;
-            SVGRect bBox = svgLocatable.getBBox();
-
-            float x = bBox.getX() + bBox.getWidth()/2;
-            float y = bBox.getY() +  bBox.getHeight()/2;
-            SVGMatrix ctm = svgLocatable.getCTM();
-
-            return (ctm.getB() * x) + (ctm.getD() * y)  + ctm.getF();
-        }
-
-
 
         @Override
         public void caretUpdate(CaretEvent e) {
@@ -131,38 +103,32 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     public void run() {
                         textToColor.setAttributeNS(null, "fill", "orange");
 
+
+                        /* TODO: Jonathan's suggestion to make more general
+                        SVGRect textBBox = ((SVGLocatable)textElement).getBBox();
+                        SVGPoint textCenter = root.createSVGPoint();
+                        textCenter.setX(textBBox.getX() + (textBBox.getWidth()/2));
+                        textCenter.setY(textBBox.getY() + (textBBox.getHeight()/2));
+                        and then ...
+                        SVGMatrix matrix = ((SVGLocatable)textElement).getTransformToElement(root);
+                        SVGPoint textOnSVGPoint = textCenter.matrixTransform(matrix);
+                        */
+
                         /*
-                        SVGLocatable textLocatable = (SVGLocatable) textToColor;
+                        customSvgCanvas.setRenderingTransform( customSvgCanvas.getInitialTransform(), true);
 
-                        SVGLocatable parentLocatable = (SVGLocatable) textToColor.getParentNode();
-                        SVGRect bBox = textLocatable.getBBox();
+                        SVGLocatable textLoc = (SVGLocatable) textToColor;
 
-                        // get center of text bbox
-                        float domX = bBox.getX() + bBox.getWidth() / 2;
-                        float domY = bBox.getY() + bBox.getHeight() / 2;
+                        SVGRect bounds = textLoc.getBBox();
 
-                        SVGPoint svgPoint = rootElement.createSVGPoint();
-                        svgPoint.setX(domX);
-                        svgPoint.setY( domY );
-                        SVGMatrix parentMatrix = parentLocatable.getCTM();
-                        SVGMatrix localMatrix = textLocatable.getCTM();
+                        float dx = bounds.getX() + bounds.getWidth() / 2;
+                        float dy = bounds.getY() + bounds.getHeight() / 2;
 
-                        SVGPoint screenPoint = svgPoint.matrixTransform(parentMatrix);
+                        final SVGSVGElement rootElement = svgDocument.getRootElement();
 
-                        AffineTransform tx = AffineTransform.getTranslateInstance
-                                (-screenPoint.getX(),
-                                        -screenPoint.getY());
-
-                        Dimension canvasSize = customSvgCanvas.getSize();
-
-                        tx.preConcatenate(AffineTransform.getTranslateInstance
-                                (canvasSize.width/2, canvasSize.height/2));
-
-                        AffineTransform rt = (AffineTransform) customSvgCanvas.getInitialTransform().clone();
-
-                        rt.preConcatenate(tx);
-
-                        customSvgCanvas.setRenderingTransform(rt);
+                        final float tx = dx - viewBoxCenterX;
+                        final float ty = dy - viewBoxCenterY;
+                        rootElement.setAttributeNS(null, "viewBox", tx + " " + ty + " " + viewBoxWidth + " " + viewBoxHeight  );
                         */
                     }
                 };
@@ -220,13 +186,17 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
             throw new RuntimeException(e);
         }
 
+        customSvgCanvas.setSVGDocument( svgDocument );
+
         rootElement = svgDocument.getRootElement();
 
+        float[] viewBoxAttrs = ViewBox.parseViewBoxAttribute(rootElement,
+                rootElement.getAttributeNS(null, "viewBox"), customSvgCanvas.getBridgeContxt());
 
-        viewBox = ViewBox.parseViewBoxAttribute(rootElement,
-                rootElement.getAttributeNS(null, "viewBox"),
-                customSvgCanvas.getBridgeContxt());
-
+        viewBoxCenterX = viewBoxAttrs[0] + viewBoxAttrs[2] / 2;
+        viewBoxCenterY = viewBoxAttrs[1] + viewBoxAttrs[3] / 2;
+        viewBoxWidth = viewBoxAttrs[2];
+        viewBoxHeight = viewBoxAttrs[3];
 
         NodeList anchors = svgDocument.getElementsByTagName("a");
         textElements.clear();
@@ -239,36 +209,10 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
             Element text = (Element) textNodes.item(0);
             textElements.put(lineNumber, text);
         }
-        customSvgCanvas.addGVTTreeRendererListener(new GVTTreeRendererListener() {
-            @Override
-            public void gvtRenderingPrepare(GVTTreeRendererEvent gvtTreeRendererEvent) {
 
-            }
-
-            @Override
-            public void gvtRenderingStarted(GVTTreeRendererEvent gvtTreeRendererEvent) {
-
-            }
-
-            @Override
-            public void gvtRenderingCompleted(GVTTreeRendererEvent gvtTreeRendererEvent) {
-                invalidate();
-                validate();
-            }
-
-            @Override
-            public void gvtRenderingCancelled(GVTTreeRendererEvent gvtTreeRendererEvent) {
-
-            }
-
-            @Override
-            public void gvtRenderingFailed(GVTTreeRendererEvent gvtTreeRendererEvent) {
-
-            }
-        });
         refreshSizeRenderListener = new RefreshSizeRenderListener();
         customSvgCanvas.addGVTTreeRendererListener( refreshSizeRenderListener );
-        customSvgCanvas.setSVGDocument( svgDocument );
+
         customSvgCanvas.addLinkActivationListener(new LinkLineJumpListener());
         syncCaretListener = new SyncCaretListener();
         textArea.addCaretListener( syncCaretListener);
