@@ -37,11 +37,16 @@ plugin.batikdockable.BatikDockablePlugin.jars=\
 # Menu
 plugin.batikdockable.BatikDockablePlugin.menu=\
   batik-svg-viewer-show \
-  batik-open-svg
+  batik-open-svg \
+  toggle-svg-sync-with-buffer
+
 
 
 batik-svg-viewer-show.label=Show Batik Svg Viewer
 batik-open-svg.label=Open Associated Svg
+toggle-svg-sync-with-buffer.label=Sync Svg With Buffer
 
 # Dockable
 batik-svg-viewer.title=Batik Svg Viewer
+
+plugin.batikdockable.syncsvg=true

@@ -14,4 +14,14 @@
             batikSvgViewer.openSvg(editPane);
         </CODE>
     </ACTION>
+
+    <ACTION NAME="toggle-svg-sync-with-buffer">
+        <CODE>
+            batikdockable.BatikDockablePlugin.toggleSyncSvgWithBuffer();
+        </CODE>
+        <IS_SELECTED>
+            return batikdockable.BatikDockablePlugin.isSyncSvgWithBuffer();
+        </IS_SELECTED>
+    </ACTION>
+
 </ACTIONS>
