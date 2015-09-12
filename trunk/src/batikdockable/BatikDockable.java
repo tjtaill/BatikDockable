@@ -25,11 +25,14 @@ import java.awt.geom.Point2D;
 import java.io.File;
 import java.util.NavigableMap;
 import java.util.TreeMap;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class BatikDockable extends JPanel implements EBComponent, DefaultFocusComponent {
 
     private final static String FILL_NONE = "#000000";
     private final static String XLINK_NS = "http://www.w3.org/1999/xlink";
+    private static Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
 
     private CustomSvgCanvas customSvgCanvas;
     private org.gjt.sp.jedit.textarea.TextArea textArea;
@@ -47,12 +50,15 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
 
     private class LinkLineJumpListener implements LinkActivationListener {
 
+
         @Override
         public void linkActivated(LinkActivationEvent linkActivationEvent) {
             if ( textArea == null ) return;
-
-            int lineNumber = Integer.valueOf(linkActivationEvent.getReferencedURI());
-            textArea.setCaretPosition(textArea.getLineStartOffset(lineNumber - 1));
+            Matcher matcher = NUMBER_PATTERN.matcher( linkActivationEvent.getReferencedURI() );
+            if ( matcher.find() ) {
+                int lineNumber = Integer.valueOf( matcher.group(1) );
+                textArea.setCaretPosition(textArea.getLineStartOffset(lineNumber - 1));
+            }
         }
     }
 
@@ -205,11 +211,14 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         for(int i = 0; i < anchors.getLength(); i++) {
             Element anchor = (Element) anchors.item(i);
             Attr href = anchor.getAttributeNodeNS(XLINK_NS, "href");
-            Integer lineNumber = Integer.valueOf(href.getValue());
-            NodeList textNodes = anchor.getElementsByTagName("text");
-            if ( textNodes.getLength() != 1 ) continue;
-            Element text = (Element) textNodes.item(0);
-            textElements.put(lineNumber, text);
+            Matcher matcher = NUMBER_PATTERN.matcher(href.getValue());
+            if ( matcher.find() ) {
+                Integer lineNumber = Integer.valueOf( matcher.group(1) );
+                NodeList textNodes = anchor.getElementsByTagName("text");
+                if (textNodes.getLength() != 1) continue;
+                Element text = (Element) textNodes.item(0);
+                textElements.put(lineNumber, text);
+            }
         }
 
         refreshSizeRenderListener = new RefreshSizeRenderListener();
