@@ -98,7 +98,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
 
             final Element textElement = getEelement(line + 1);
 
-            if ( BatikDockablePlugin.isSyncSvgWithBuffer() ) {
+            if ( textElement != null && BatikDockablePlugin.isSyncSvgWithBuffer() ) {
                 final SVGRect textBBox = ((SVGLocatable) textElement).getBBox();
                 final SVGPoint textCenter = rootElement.createSVGPoint();
                 textCenter.setX(textBBox.getX() + textBBox.getWidth() / 2);
