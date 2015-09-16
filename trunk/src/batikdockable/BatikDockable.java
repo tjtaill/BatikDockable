@@ -38,7 +38,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
     private org.gjt.sp.jedit.textarea.TextArea textArea;
     private Buffer buffer;
     private LinkLineJumpListener linkLineJumpListener;
-    private NavigableMap<Integer, Element> textElements = new TreeMap<>();
+    private NavigableMap<Integer, Element> elements = new TreeMap<>();
     private SAXSVGDocumentFactory svgDocumentFactory =
             new SAXSVGDocumentFactory( XMLResourceDescriptor.getXMLParserClassName() );
     private SVGDocument svgDocument;
@@ -66,7 +66,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         private int oldLine = -1;
 
         private Element getEelement(int line) {
-            NavigableMap<Integer, Element> headMap = textElements.headMap(line, true);
+            NavigableMap<Integer, Element> headMap = elements.headMap(line, true);
             return !headMap.isEmpty() ? headMap.lastEntry().getValue() : null;
         }
 
@@ -87,7 +87,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
             Runnable r = new Runnable() {
                 @Override
                 public void run() {
-                    for (Element value : textElements.values()) {
+                    for (Element value : elements.values()) {
                         value.setAttributeNS(null, "fill", FILL_NONE);
 
                     }
@@ -96,15 +96,15 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
             };
             invokeLater(r);
 
-            final Element textElement = getEelement(line + 1);
+            final Element element = getEelement(line + 1);
 
-            if ( textElement != null && BatikDockablePlugin.isSyncSvgWithBuffer() ) {
-                final SVGRect textBBox = ((SVGLocatable) textElement).getBBox();
+            if ( element != null && BatikDockablePlugin.isSyncSvgWithBuffer() ) {
+                final SVGRect textBBox = ((SVGLocatable) element).getBBox();
                 final SVGPoint textCenter = rootElement.createSVGPoint();
                 textCenter.setX(textBBox.getX() + textBBox.getWidth() / 2);
                 textCenter.setY(textBBox.getY() + textBBox.getHeight() / 2);
 
-                final SVGMatrix rootTransform = ((SVGLocatable) textElement).getTransformToElement(rootElement);
+                final SVGMatrix rootTransform = ((SVGLocatable) element).getTransformToElement(rootElement);
                 final SVGPoint textCenterOnRoot = textCenter.matrixTransform(rootTransform);
 
                 String[] vbParts = rootElement.getAttributeNS(null, "viewBox").split(" ");
@@ -138,11 +138,11 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                 customSvgCanvas.setRenderingTransform(renderingTransform);
             }
 
-            if (textElement != null) {
+            if (element != null) {
                 r = new Runnable() {
                     @Override
                     public void run() {
-                        textElement.setAttributeNS(null, "fill", "orange");
+                        element.setAttributeNS(null, "fill", "orange");
 
 
                     }
@@ -207,17 +207,24 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         rootElement = svgDocument.getRootElement();
 
         NodeList anchors = svgDocument.getElementsByTagName("a");
-        textElements.clear();
+        elements.clear();
         for(int i = 0; i < anchors.getLength(); i++) {
             Element anchor = (Element) anchors.item(i);
             Attr href = anchor.getAttributeNodeNS(XLINK_NS, "href");
             Matcher matcher = NUMBER_PATTERN.matcher(href.getValue());
             if ( matcher.find() ) {
-                Integer lineNumber = Integer.valueOf( matcher.group(1) );
+                Integer lineNumber = Integer.valueOf(matcher.group(1));
                 NodeList textNodes = anchor.getElementsByTagName("text");
-                if (textNodes.getLength() != 1) continue;
-                Element text = (Element) textNodes.item(0);
-                textElements.put(lineNumber, text);
+                NodeList useNodes = anchor.getElementsByTagName("use");
+                Element element = null;
+                if (textNodes.getLength() == 1) {
+                    element = (Element) textNodes.item(0);
+                } else if ( useNodes.getLength() > 0 ) {
+                    element = anchor;
+                } else {
+                    continue;
+                }
+                elements.put(lineNumber, element);
             }
         }
 
