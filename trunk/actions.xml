@@ -11,7 +11,8 @@
         <CODE>
             wm.showDockableWindow("batik-svg-viewer");
             batikSvgViewer = wm.getDockableWindow("batik-svg-viewer");
-            batikSvgViewer.openSvg(editPane);
+            filePath = buffer.getPath().split("\\.")[0] + ".svg";
+            batikSvgViewer.openSvg(editPane, filePath);
         </CODE>
     </ACTION>
 

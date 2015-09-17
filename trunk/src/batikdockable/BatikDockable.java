@@ -11,6 +11,7 @@ import org.apache.batik.util.XMLResourceDescriptor;
 import org.gjt.sp.jedit.*;
 import org.gjt.sp.jedit.gui.DefaultFocusComponent;
 import org.gjt.sp.jedit.msg.BufferUpdate;
+import org.gjt.sp.jedit.textarea.JEditTextArea;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
@@ -35,7 +36,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
     private static Pattern NUMBER_PATTERN = Pattern.compile("(\\d+)");
 
     private CustomSvgCanvas customSvgCanvas;
-    private org.gjt.sp.jedit.textarea.TextArea textArea;
+
     private Buffer buffer;
     private LinkLineJumpListener linkLineJumpListener;
     private NavigableMap<Integer, Element> elements = new TreeMap<>();
@@ -46,6 +47,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
     private SVGSVGElement rootElement;
     private RefreshSizeRenderListener refreshSizeRenderListener;
     private boolean syncSvgWithBuffer = true;
+    private JEditTextArea textArea;
 
 
     private class LinkLineJumpListener implements LinkActivationListener {
@@ -76,6 +78,10 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
 
         @Override
         public void caretUpdate(CaretEvent e) {
+            JEditTextArea ta = (JEditTextArea) e.getSource();
+
+            if (buffer != ta.getBuffer()) return;
+
             int offset = e.getDot();
             int line = textArea.getLineOfOffset(offset);
 
@@ -89,9 +95,7 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                 public void run() {
                     for (Element value : elements.values()) {
                         value.setAttributeNS(null, "fill", FILL_NONE);
-
                     }
-                    rootElement.removeAttributeNS(null, "transform");
                 }
             };
             invokeLater(r);
@@ -143,8 +147,6 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
                     @Override
                     public void run() {
                         element.setAttributeNS(null, "fill", "orange");
-
-
                     }
                 };
                 invokeLater(r);
@@ -189,12 +191,11 @@ public class BatikDockable extends JPanel implements EBComponent, DefaultFocusCo
         add(customSvgCanvas, BorderLayout.CENTER);
     }
 
-    public void openSvg(EditPane editPane) {
+    public void openSvg(EditPane editPane, String filePath) {
         this.buffer = editPane.getBuffer();
-        this.textArea = editPane.getTextArea();
+        textArea = editPane.getTextArea();
         Buffer buffer = editPane.getBuffer();
-        String[] parts = buffer.getPath().split("\\.", 2);
-        File svgFile = new File( parts[0] + ".svg" );
+        File svgFile = new File( filePath );
 
         try {
             svgDocument = svgDocumentFactory.createSVGDocument( svgFile.toURI().toString() );
